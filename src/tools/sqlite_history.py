@@ -1,56 +1,71 @@
 import sqlite3
-import datetime
-import os
+import json
+import logging
+from typing import List, Dict, Any, Optional
+
+logger = logging.getLogger(__name__)
 
 DB_PATH = 'vehicle_history.db'
 
 def get_connection(db_path=DB_PATH):
-    return sqlite3.connect(db_path)
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 def initialize_database(db_path=DB_PATH):
-    "\""Initializes the SQLite database with the required schema."\""
+    """Initializes the SQLite database with the exact schema from Section 5.3."""
     conn = get_connection(db_path)
     cursor = conn.cursor()
 
-    # Create jobs table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS jobs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            vin TEXT NOT NULL,
+            id TEXT PRIMARY KEY,
+            vin TEXT,
+            make TEXT,
+            model TEXT,
+            dtc_codes TEXT,
+            symptom_text TEXT,
             status TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            closed_at TIMESTAMP
         )
     ''')
 
-    # Create diagnoses table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS diagnoses (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            job_id INTEGER NOT NULL,
-            description TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            job_id TEXT NOT NULL,
+            ranked_causes TEXT, -- JSON
+            confidence REAL,
+            sources TEXT, -- JSON
+            escalation_flag BOOLEAN,
+            model_id TEXT,
+            tokens_in INTEGER,
+            tokens_out INTEGER,
             FOREIGN KEY (job_id) REFERENCES jobs (id)
         )
     ''')
 
-    # Create approvals table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS approvals (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            job_id INTEGER NOT NULL,
-            status TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            job_id TEXT NOT NULL,
+            technician_id TEXT,
+            decision TEXT,
+            notes TEXT,
+            decided_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (job_id) REFERENCES jobs (id)
         )
     ''')
 
-    # Create feedback table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS feedback (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            job_id INTEGER NOT NULL,
-            comments TEXT NOT NULL,
+            job_id TEXT NOT NULL,
+            confirmed_cause TEXT,
+            confirmed_fix TEXT,
+            part_cost REAL,
+            labour_hours REAL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (job_id) REFERENCES jobs (id)
         )
@@ -58,73 +73,27 @@ def initialize_database(db_path=DB_PATH):
 
     conn.commit()
     conn.close()
+    logger.info("SQLite database initialized successfully.")
 
-def insert_new_job(vin, status="PENDING", db_path=DB_PATH):
-    "\""Inserts a new job and returns the job ID."\""
+def get_service_history(vin: str, db_path=DB_PATH) -> List[Dict[str, Any]]:
+    """Retrieves past service history and confirmed feedback for a VIN."""
     conn = get_connection(db_path)
     cursor = conn.cursor()
     
     cursor.execute('''
-        INSERT INTO jobs (vin, status)
-        VALUES (?, ?)
-    ''', (vin, status))
-    
-    job_id = cursor.lastrowid
-    conn.commit()
-    conn.close()
-    
-    return job_id
-
-def update_job_status(job_id, new_status, db_path=DB_PATH):
-    "\""Updates the status of an existing job."\""
-    conn = get_connection(db_path)
-    cursor = conn.cursor()
-    
-    cursor.execute('''
-        UPDATE jobs
-        SET status = ?, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-    ''', (new_status, job_id))
-    
-    conn.commit()
-    conn.close()
-
-def retrieve_service_history(vin, db_path=DB_PATH):
-    "\""Retrieves service history for a specific VIN."\""
-    conn = get_connection(db_path)
-    # Use Row factory to get dict-like objects
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    
-    cursor.execute('''
-        SELECT * FROM jobs WHERE vin = ? ORDER BY created_at DESC
+        SELECT j.id as job_id, j.created_at, j.symptom_text, 
+               f.confirmed_cause, f.confirmed_fix 
+        FROM jobs j
+        JOIN feedback f ON j.id = f.job_id
+        WHERE j.vin = ?
+        ORDER BY j.created_at DESC
+        LIMIT 5
     ''', (vin,))
     
-    jobs = cursor.fetchall()
-    
-    history = []
-    for job in jobs:
-        job_dict = dict(job)
-        job_id = job['id']
-        
-        # Get diagnoses
-        cursor.execute('SELECT * FROM diagnoses WHERE job_id = ?', (job_id,))
-        job_dict['diagnoses'] = [dict(row) for row in cursor.fetchall()]
-        
-        # Get approvals
-        cursor.execute('SELECT * FROM approvals WHERE job_id = ?', (job_id,))
-        job_dict['approvals'] = [dict(row) for row in cursor.fetchall()]
-        
-        # Get feedback
-        cursor.execute('SELECT * FROM feedback WHERE job_id = ?', (job_id,))
-        job_dict['feedback'] = [dict(row) for row in cursor.fetchall()]
-        
-        history.append(job_dict)
-        
+    results = [dict(row) for row in cursor.fetchall()]
     conn.close()
     
-    return history
+    return results
 
 if __name__ == '__main__':
     initialize_database()
-    print('Database initialized.')
