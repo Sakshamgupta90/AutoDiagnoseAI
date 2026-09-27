@@ -13,6 +13,12 @@ import { createMockBackend } from './mock'
 
 export type StreamConnection = 'connecting' | 'open' | 'reconnecting' | 'polling'
 
+export interface HealthStatus {
+  reachable: boolean
+  /** Whether the AI model is currently answering; null when the backend doesn't say. */
+  llmAvailable: boolean | null
+}
+
 export interface StreamHandlers {
   onEvent: (event: DiagnosisEvent) => void
   onConnectionChange?: (state: StreamConnection, attempt?: number) => void
@@ -21,8 +27,7 @@ export interface StreamHandlers {
 /** Everything the UI needs from the backend — implemented by the live API and the mock. */
 export interface DiagnosisBackend {
   readonly mode: 'live' | 'mock'
-  /** Resolves true when the service is reachable. */
-  health(signal?: AbortSignal): Promise<boolean>
+  health(signal?: AbortSignal): Promise<HealthStatus>
   createDiagnosis(req: DiagnosisRequest, signal?: AbortSignal): Promise<CreateDiagnosisResponse>
   /** Streams typed events; resolves after `done`, rejects on unrecoverable errors. */
   streamEvents(jobId: string, handlers: StreamHandlers, signal: AbortSignal): Promise<void>

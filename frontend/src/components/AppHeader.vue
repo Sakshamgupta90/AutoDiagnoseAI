@@ -18,6 +18,7 @@ const status = computed(() => {
   if (conn.state === 'offline') return { label: conn.browserOnline ? 'Service offline' : 'No internet', dot: 'bg-danger', ping: false }
   if (conn.state === 'checking') return { label: 'Connecting', dot: 'bg-warn', ping: true }
   if (conn.mode === 'mock') return { label: 'Demo mode', dot: 'bg-info', ping: false }
+  if (conn.llmAvailable === false) return { label: 'Live · Offline mode', dot: 'bg-warn', ping: false }
   return { label: 'Live · Bedrock', dot: 'bg-ok', ping: true }
 })
 

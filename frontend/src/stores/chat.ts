@@ -13,6 +13,7 @@ import type {
   VehicleContext,
 } from '@/types/chat'
 import type { Decision, DecisionPayload, DiagnosisEvent, FeedbackPayload } from '@/types/diagnosis'
+import { useConnectionStore } from './connection'
 import { useToastStore } from './toast'
 
 const STORAGE_KEY = 'autodiagnose.conversations.v1'
@@ -246,6 +247,7 @@ export const useChatStore = defineStore('chat', () => {
       const m = get()
       if (m) m.finishedAt = Date.now()
       touch(convoId)
+      useConnectionStore().check() // reflect whether the AI model answered
     }
   }
 

@@ -144,3 +144,20 @@ async def test_offline_vague_photo_question_is_consistent():
     assert done["fallback_mode"] is True
     assert "Photos can't be analysed" in done["summary"]
     assert done["escalation_type"] == "low_confidence"
+
+
+@pytest.mark.asyncio
+async def test_confirmed_fix_ranks_first_and_drives_offline_answer():
+    store = get_store()
+    db.create_job("job_t6", None, None, "Hyundai", "Elantra", ["P0217"], "Temperature gauge climbs into the red in traffic")
+    promote_confirmed_fix(db.get_job("job_t6"), "Leaking lower radiator hose", "Replaced lower radiator hose")
+    top = store.search("Temperature gauge climbs into the red in traffic and coolant keeps dropping", top_k=3)[0]
+    assert top.trust == "confirmed"
+
+    rec = Recorder()
+    inp = new_job("job_t7", "Temperature gauge climbs into the red in traffic and coolant keeps dropping")
+    await Diagnoser(inp, rec, llm=FakeClaude(unavailable="offline")).run()
+    done = rec.done
+    assert "Replaced lower radiator hose" in done["ranked_causes"][0]["cause"]
+    assert done["ranked_causes"][0]["confidence"] >= 0.5
+    assert "confirmed at this workshop" in done["summary"]

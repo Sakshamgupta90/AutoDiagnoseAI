@@ -26,8 +26,9 @@ logger = logging.getLogger(__name__)
 KNOWLEDGE = "knowledge"
 LEARNED = "learned"
 
-# Unverified answers rank below trusted knowledge for the same similarity.
-TRUST_WEIGHT = {"verified": 1.0, "confirmed": 1.0, "unverified": 0.85}
+# Fixes confirmed by the workshop's own technicians are the most specific evidence, so they rank
+# above generic dataset entries; unverified answers rank below trusted knowledge.
+TRUST_WEIGHT = {"verified": 1.0, "confirmed": 1.15, "unverified": 0.85}
 
 
 @dataclass

@@ -138,10 +138,17 @@ export function createLiveBackend(baseUrl: string): DiagnosisBackend {
     async health(signal) {
       try {
         // Any HTTP response means the service is reachable, even if /health isn't implemented.
-        await fetch(`${baseUrl}${config.healthPath}`, { signal: withTimeout(signal, 5000) })
-        return true
+        const res = await fetch(`${baseUrl}${config.healthPath}`, { signal: withTimeout(signal, 5000) })
+        let llmAvailable: boolean | null = null
+        try {
+          const body = await res.json()
+          if (typeof body?.llm?.available === 'boolean') llmAvailable = body.llm.available
+        } catch {
+          /* non-JSON health response */
+        }
+        return { reachable: true, llmAvailable }
       } catch {
-        return false
+        return { reachable: false, llmAvailable: null }
       }
     },
 

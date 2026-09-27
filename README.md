@@ -166,7 +166,7 @@ All settings are read from `.env`; see [`.env.example`](.env.example) for the fu
 ## Testing
 
 ```bash
-.venv/bin/python -m pytest -q       # 12 tests: agent loop (scripted Claude), retrieval, learning, fallback, full HTTP lifecycle
+.venv/bin/python -m pytest -q       # 13 tests: agent loop (scripted Claude), retrieval, learning, fallback, full HTTP lifecycle
 cd frontend && npm test             # 12 tests: SSE parser, VIN and fault-code validation
 ```
 
