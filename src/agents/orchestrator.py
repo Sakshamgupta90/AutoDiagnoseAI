@@ -383,20 +383,30 @@ class Diagnoser:
             }
         causes, tests = [], []
         for h in relevant:
-            label = h.metadata.get("subcategory") or h.category
+            if h.metadata.get("kind") == "confirmed_fix":
+                cause = f"{h.metadata.get('subcategory')} (confirmed before at this workshop: {h.metadata.get('fix', 'see job record')})"
+            else:
+                cause = f"{h.metadata.get('subcategory') or h.category} fault ({h.category})"
             causes.append({
-                "cause": f"{label} fault ({h.category})",
-                "confidence": round(min(0.7, h.similarity * 0.85), 2),
+                # Retrieval-only confidence: strong matches clear 0.5, weak ones stay below and are escalated.
+                "cause": cause,
+                "confidence": round(min(0.75, h.score * 1.15), 2),
                 "evidence_ids": [h.id],
             })
             for t in json.loads(h.metadata.get("tests", "[]")):
                 if t not in tests:
                     tests.append(t)
         top = relevant[0]
-        return {
-            "summary": f"Offline result from the local knowledge base. The closest match is "
+        if top.metadata.get("kind") == "confirmed_fix":
+            summary = (f"Offline result from the local knowledge base. This matches a fix confirmed at this workshop before: "
+                       f"“{top.metadata.get('subcategory')}”, fixed by: {top.metadata.get('fix', 'see job record')}. "
+                       "Verify with the checks below; the estimate covers diagnostic time only.")
+        else:
+            summary = (f"Offline result from the local knowledge base. The closest match is "
                        f"“{top.metadata.get('subcategory') or top.category}” ({top.source}). "
-                       "Work through the checks below; the estimate covers diagnostic time only.",
+                       "Work through the checks below; the estimate covers diagnostic time only.")
+        return {
+            "summary": summary,
             "answer_source": "fallback",
             "ranked_causes": causes,
             "confirmation_tests": tests[:6],
@@ -537,6 +547,7 @@ def promote_confirmed_fix(job: dict[str, Any], confirmed_cause: str, confirmed_f
         "kind": "confirmed_fix",
         "job_id": job["id"],
         "subcategory": confirmed_cause[:80],
+        "fix": confirmed_fix[:200],
         "tests": json.dumps([f"Verify: {confirmed_cause}", f"Previously fixed by: {confirmed_fix}"]),
     }])
     store.delete(LEARNED, [f"learned-{job['id']}"])

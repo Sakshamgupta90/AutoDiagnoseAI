@@ -269,7 +269,7 @@ export function createMockBackend(): DiagnosisBackend {
     mode: 'mock',
 
     async health() {
-      return navigator.onLine
+      return { reachable: navigator.onLine, llmAvailable: null }
     },
 
     async createDiagnosis(req, signal) {

@@ -8,6 +8,7 @@ export type ConnectionState = 'checking' | 'online' | 'offline'
 export const useConnectionStore = defineStore('connection', () => {
   const state = ref<ConnectionState>('checking')
   const browserOnline = ref(navigator.onLine)
+  const llmAvailable = ref<boolean | null>(null)
   const mode = backend.mode
 
   async function check() {
@@ -15,7 +16,9 @@ export const useConnectionStore = defineStore('connection', () => {
       state.value = 'offline'
       return
     }
-    state.value = (await backend.health()) ? 'online' : 'offline'
+    const status = await backend.health()
+    state.value = status.reachable ? 'online' : 'offline'
+    llmAvailable.value = status.llmAvailable
   }
 
   const onOnline = () => ((browserOnline.value = true), check())
@@ -31,5 +34,5 @@ export const useConnectionStore = defineStore('connection', () => {
     clearInterval(timer)
   })
 
-  return { state, browserOnline, mode, check }
+  return { state, browserOnline, llmAvailable, mode, check }
 })

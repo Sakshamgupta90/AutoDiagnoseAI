@@ -6,6 +6,7 @@ knowledge-base fallback and the "Cloud unreachable" notice.
 """
 
 import logging
+import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -45,6 +46,13 @@ class ClaudeClient:
     def __init__(self) -> None:
         self._client: AsyncAnthropicBedrock | None = None
         self.model = settings.BEDROCK_MODEL_ID
+        self.last_error: str | None = None
+        self._last_error_at = 0.0
+
+    @property
+    def available(self) -> bool:
+        """Enabled, and no Bedrock failure in the last 5 minutes (drives the UI's mode indicator)."""
+        return self.enabled and not (self.last_error and time.monotonic() - self._last_error_at < 300)
 
     @property
     def enabled(self) -> bool:
@@ -71,6 +79,15 @@ class ClaudeClient:
 
     async def create(self, usage: Usage, **kwargs: Any) -> Any:
         """One Messages API call. Raises LLMUnavailable instead of provider-specific errors."""
+        try:
+            message = await self._create(usage, **kwargs)
+        except LLMUnavailable as exc:
+            self.last_error, self._last_error_at = exc.reason, time.monotonic()
+            raise
+        self.last_error = None
+        return message
+
+    async def _create(self, usage: Usage, **kwargs: Any) -> Any:
         if not self.enabled:
             raise LLMUnavailable("AI model disabled (LLM_ENABLED=false).")
         spent = db.spend_today()["cost_usd"]

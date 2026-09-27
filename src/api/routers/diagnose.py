@@ -75,6 +75,8 @@ def health() -> dict:
         "status": "ok",
         "llm": {
             "enabled": claude.enabled,
+            "available": claude.available,
+            "last_error": claude.last_error,
             "credentials_in_env": settings.has_aws_credentials,
             "model": settings.BEDROCK_MODEL_ID,
             "region": settings.AWS_REGION,
