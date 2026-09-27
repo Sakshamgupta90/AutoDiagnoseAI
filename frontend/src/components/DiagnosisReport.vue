@@ -15,6 +15,21 @@ const lowConfidence = computed(() => !top.value || top.value.confidence < config
 const partsTotal = computed(() => d.value.parts_estimate.reduce((n, p) => n + (Number(p.est_cost) || 0), 0))
 const checked = ref<boolean[]>([])
 
+const sourceLabel = computed(() => {
+  switch (d.value.answer_source) {
+    case 'knowledge_base':
+      return { text: 'Grounded in the workshop knowledge base', dot: 'bg-ok' }
+    case 'mixed':
+      return { text: 'Knowledge base + general automotive knowledge', dot: 'bg-info' }
+    case 'general_knowledge':
+      return { text: 'General knowledge — unverified until a technician confirms the fix', dot: 'bg-warn' }
+    case 'fallback':
+      return { text: 'Offline fallback — local knowledge base only', dot: 'bg-warn' }
+    default:
+      return null
+  }
+})
+
 const barTone = { low: 'bg-danger', medium: 'bg-warn', high: 'bg-ok' } as const
 const textTone = { low: 'text-danger', medium: 'text-warn', high: 'text-ok' } as const
 
@@ -66,6 +81,10 @@ async function copy() {
     </div>
 
     <p v-if="d.summary" class="text-[15px] leading-relaxed text-pretty text-fg">{{ d.summary }}</p>
+
+    <p v-if="sourceLabel" class="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-1 text-xs text-fg-soft">
+      <span class="size-1.5 rounded-full" :class="sourceLabel.dot" /> {{ sourceLabel.text }}
+    </p>
 
     <div v-if="d.safety_flags.length" class="flex flex-wrap items-center gap-1.5">
       <span v-for="f in d.safety_flags" :key="f" class="inline-flex items-center gap-1 rounded-md bg-danger/10 px-2 py-1 text-xs font-medium text-danger">

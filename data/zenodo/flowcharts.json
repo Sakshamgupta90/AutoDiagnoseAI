@@ -1,0 +1,56 @@
+{
+  "_source": "Transcribed from the four flowchart PNGs in the Zenodo Automotive Faults Dataset (record 15626055, CC BY 4.0). Each node is one decision step; `next` maps an observed result to the follow-up node or the recommended action.",
+  "flowcharts": [
+    {
+      "id": "brakes",
+      "title": "Brake Faults",
+      "category": "Brakes",
+      "symptom_branches": ["Brake pedal soft", "Brake noise", "Brake fluid leak", "ABS light on"],
+      "expanded_branch": "Brake pedal soft",
+      "nodes": [
+        { "id": "fc-brake-1", "check": "Check brake fluid level", "next": { "Low": "Refill brake fluid", "Normal": "fc-brake-2" } },
+        { "id": "fc-brake-2", "check": "Check for brake fluid leaks", "next": { "Leak found": "Repair leaks", "No leaks": "fc-brake-3" } },
+        { "id": "fc-brake-3", "check": "Check brake pads and rotors", "next": { "Worn": "Replace brake pads or rotors", "Good": "fc-brake-4" } },
+        { "id": "fc-brake-4", "check": "Check brake master cylinder", "next": { "Faulty": "Replace master cylinder", "Working": "No further action required" } }
+      ]
+    },
+    {
+      "id": "electrical",
+      "title": "Electrical Faults",
+      "category": "Electrical System",
+      "symptom_branches": ["Battery dead", "Alternator failure", "Starter motor issues", "Fuse issues"],
+      "expanded_branch": "Battery dead",
+      "nodes": [
+        { "id": "fc-elec-1", "check": "Check battery terminals", "next": { "Corroded": "Clean terminals", "Clean": "fc-elec-2" } },
+        { "id": "fc-elec-2", "check": "Check battery voltage", "next": { "Low voltage": "Charge or replace battery", "Normal voltage": "fc-elec-3" } },
+        { "id": "fc-elec-3", "check": "Check alternator output", "next": { "Low output": "Replace alternator", "Normal output": "No further action required" } }
+      ]
+    },
+    {
+      "id": "overheating",
+      "title": "Engine Overheating",
+      "category": "Cooling System",
+      "symptom_branches": ["Engine overheating"],
+      "expanded_branch": "Engine overheating",
+      "nodes": [
+        { "id": "fc-heat-1", "check": "Check coolant level", "next": { "Low": "Refill coolant and check for leaks", "Normal": "fc-heat-2" } },
+        { "id": "fc-heat-2", "check": "Check radiator fan operation", "next": { "Not working": "Check fan motor, relay, and fuse", "Working": "fc-heat-3" } },
+        { "id": "fc-heat-3", "check": "Check thermostat", "next": { "Stuck closed": "Replace thermostat", "Functioning normally": "fc-heat-4" } },
+        { "id": "fc-heat-4", "check": "Inspect radiator", "next": { "Blocked or damaged": "Clean or replace radiator", "Clear": "fc-heat-5" } },
+        { "id": "fc-heat-5", "check": "Check for head gasket failure", "next": { "Symptoms of failure": "Replace head gasket", "No symptoms": "No further action required" } }
+      ]
+    },
+    {
+      "id": "transmission",
+      "title": "Transmission Faults",
+      "category": "Transmission",
+      "symptom_branches": ["Slipping", "Noisy operation", "Fluid leaks", "Shifting issues"],
+      "expanded_branch": "Slipping",
+      "nodes": [
+        { "id": "fc-trans-1", "check": "Check transmission fluid level", "next": { "Low": "Refill fluid", "Normal": "fc-trans-2" } },
+        { "id": "fc-trans-2", "check": "Check transmission fluid condition", "next": { "Contaminated": "Replace fluid and filter", "Clean": "fc-trans-3" } },
+        { "id": "fc-trans-3", "check": "Check for internal wear", "next": { "Signs of wear": "Repair or replace transmission", "No wear": "No further action required" } }
+      ]
+    }
+  ]
+}

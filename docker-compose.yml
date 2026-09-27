@@ -1,0 +1,32 @@
+# Lightsail deployment: one instance serves the Vue app and the API behind Caddy (automatic HTTPS).
+# DOMAIN comes from .env, e.g. 13-229-10-20.sslip.io or diag.yourdomain.com
+services:
+  api:
+    build: .
+    env_file: .env
+    volumes:
+      - appdata:/app/var
+    restart: unless-stopped
+    expose:
+      - "8000"
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.web
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in .env}
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+volumes:
+  appdata:
+  caddy_data:
+  caddy_config:
