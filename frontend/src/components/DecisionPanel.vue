@@ -11,12 +11,18 @@ import type { Decision } from '@/types/diagnosis'
  * - otherwise: the assigned technician accepts or rejects the diagnosis.
  */
 const uid = useId()
-const props = defineProps<{
-  senior: boolean
-  reason?: string
-  category?: string
-  submit: (decision: Decision, technicianId: string, notes: string) => Promise<boolean>
-}>()
+// `blocking` must default to true: Vue casts an omitted boolean prop to false.
+const props = withDefaults(
+  defineProps<{
+    senior: boolean
+    /** false when the plan is already visible (low-confidence review rather than a safety block). */
+    blocking?: boolean
+    reason?: string
+    category?: string
+    submit: (decision: Decision, technicianId: string, notes: string) => Promise<boolean>
+  }>(),
+  { blocking: true },
+)
 
 const technician = useTechnician()
 const id = ref(technician.value)
@@ -53,11 +59,11 @@ async function act(decision: Decision) {
         <UserCheck v-else class="size-5" />
       </span>
       <div class="min-w-0">
-        <h3 class="text-sm font-semibold">{{ senior ? 'Senior technician sign-off required' : 'Review this diagnosis' }}</h3>
+        <h3 class="text-sm font-semibold">{{ senior ? (!blocking ? 'Senior technician review required' : 'Senior technician sign-off required') : 'Review this diagnosis' }}</h3>
         <p class="mt-0.5 text-sm text-fg-soft">
           <template v-if="senior">
             <span v-if="category" class="mr-1 inline-block rounded bg-warn/15 px-1.5 py-px text-xs font-medium text-warn capitalize">{{ category }}</span>
-            {{ reason || 'This plan affects a safety-critical system.' }} The repair plan stays hidden until it’s approved.
+            {{ reason || 'This plan affects a safety-critical system.' }} {{ !blocking ? 'Run the tests above before any repair.' : 'The repair plan stays hidden until it’s approved.' }}
           </template>
           <template v-else>Accept it to close the job with the confirmed fix, or reject it with a reason.</template>
         </p>

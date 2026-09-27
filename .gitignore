@@ -1,0 +1,19 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Runtime data (rebuilt by `python -m src.knowledge.ingest`)
+data/chroma/
+data/*.db
+data/*.db-*
+
+# OS / editor
+.DS_Store
+.claude/

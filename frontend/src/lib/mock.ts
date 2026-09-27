@@ -160,6 +160,7 @@ function buildTimeline(req: DiagnosisRequest, jobId: string): { timeline: Timeli
         labour_estimate_hours: 1.5,
         safety_flags: ['Brakes', 'Do not release vehicle until repaired'],
         escalation_required: true,
+        escalation_type: 'safety',
       }
       break
     }
@@ -244,6 +245,7 @@ function buildTimeline(req: DiagnosisRequest, jobId: string): { timeline: Timeli
         labour_estimate_hours: 0.5,
         safety_flags: [],
         escalation_required: true,
+        escalation_type: 'low_confidence',
         budget_exhausted: true,
       }
     }

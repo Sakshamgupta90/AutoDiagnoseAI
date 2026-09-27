@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AlertTriangle, CheckCircle2, CloudOff, Hourglass, Lock, PencilLine, PlugZap, RotateCcw, ShieldAlert, ShieldCheck, Square, XCircle } from 'lucide-vue-next'
+import { AlertTriangle, BookPlus, CheckCircle2, CloudOff, Hourglass, Lock, PencilLine, PlugZap, RotateCcw, ShieldAlert, ShieldCheck, Square, XCircle } from 'lucide-vue-next'
 import { computed } from 'vue'
 import BrandMark from '@/components/BrandMark.vue'
 import ConfidenceMeter from '@/components/ConfidenceMeter.vue'
@@ -21,7 +21,10 @@ const m = computed(() => props.message)
 const live = computed(() => isInFlight(m.value.status))
 const d = computed(() => m.value.diagnosis)
 const needsSenior = computed(() => !!d.value?.escalation_required)
-const gated = computed(() => needsSenior.value && m.value.decision?.decision !== 'approved')
+// Safety-critical plans are hidden until a senior approves (M3). Low-confidence answers stay visible —
+// the tests to run are the answer — but still need a senior's review.
+const hardBlock = computed(() => needsSenior.value && d.value?.escalation_type !== 'low_confidence')
+const gated = computed(() => hardBlock.value && m.value.decision?.decision !== 'approved')
 const photoCount = computed(() => (props.request?.role === 'user' ? props.request.attachments.length : 0))
 
 const statusLine = computed(() => {
@@ -86,13 +89,14 @@ function editAndResend() {
         v-for="n in m.notices"
         :key="n.kind"
         class="flex gap-2.5 rounded-xl border px-3 py-2.5 text-sm"
-        :class="n.kind === 'cloud_unreachable' ? 'border-warn/30 bg-warn/10' : 'border-info/25 bg-info/10'"
+        :class="n.kind === 'cloud_unreachable' ? 'border-warn/30 bg-warn/10' : n.kind === 'knowledge_gap' ? 'border-brand/25 bg-brand-soft' : 'border-info/25 bg-info/10'"
         role="status"
       >
         <CloudOff v-if="n.kind === 'cloud_unreachable'" class="mt-0.5 size-4 shrink-0 text-warn" />
+        <BookPlus v-else-if="n.kind === 'knowledge_gap'" class="mt-0.5 size-4 shrink-0 text-brand" />
         <Hourglass v-else class="mt-0.5 size-4 shrink-0 text-info" />
         <div>
-          <p class="font-medium">{{ n.kind === 'cloud_unreachable' ? 'Cloud unreachable — offline fallback' : n.kind === 'budget_exhausted' ? 'Reasoning budget reached' : 'Note' }}</p>
+          <p class="font-medium">{{ n.kind === 'cloud_unreachable' ? 'Cloud unreachable — offline fallback' : n.kind === 'budget_exhausted' ? 'Reasoning budget reached' : n.kind === 'knowledge_gap' ? 'New case — answered from general knowledge' : 'Note' }}</p>
           <p class="text-fg-soft">{{ n.message }}</p>
         </div>
       </div>
@@ -175,7 +179,14 @@ function editAndResend() {
           </div>
           <DiagnosisReport :diagnosis="d" />
 
-          <DecisionPanel v-if="!m.decision" :senior="false" :submit="decide" />
+          <DecisionPanel
+            v-if="!m.decision"
+            :senior="needsSenior"
+            :blocking="false"
+            :reason="needsSenior ? m.escalation?.reason : undefined"
+            :category="needsSenior ? m.escalation?.category : undefined"
+            :submit="decide"
+          />
 
           <div v-else-if="m.decision.decision === 'rejected'" class="flex gap-2.5 rounded-xl border border-line bg-surface p-3.5 text-sm">
             <XCircle class="mt-0.5 size-4 shrink-0 text-danger" />

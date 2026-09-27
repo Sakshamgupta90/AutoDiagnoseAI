@@ -9,6 +9,7 @@ interface ToolMeta {
 const TOOLS: Record<string, ToolMeta> = {
   vin_decode: { label: 'Decoded vehicle', running: 'Decoding VIN / vehicle', icon: Car },
   sqlite_history: { label: 'Checked service history', running: 'Checking service history', icon: History },
+  knowledge_search: { label: 'Searched repair knowledge base', running: 'Searching repair knowledge base', icon: Database },
   qdrant_search: { label: 'Searched repair knowledge base', running: 'Searching repair knowledge base', icon: Database },
   photo_analysis: { label: 'Analysed inspection photos', running: 'Analysing inspection photos', icon: Camera },
 }

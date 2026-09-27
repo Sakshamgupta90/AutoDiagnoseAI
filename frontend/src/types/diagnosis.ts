@@ -70,6 +70,10 @@ export interface Diagnosis {
   fallback_mode?: boolean
   /** extension: true when the 3-turn / ~6-tool / 45s budget forced the answer. */
   budget_exhausted?: boolean
+  /** extension: why escalation is required — only `safety` hides the plan until sign-off. */
+  escalation_type?: 'safety' | 'low_confidence' | null
+  /** extension: what the answer rests on. */
+  answer_source?: 'knowledge_base' | 'general_knowledge' | 'mixed' | 'fallback'
 }
 
 /* ---------- SSE events — Section 6.2 ---------- */
@@ -99,7 +103,7 @@ export interface EscalationEventData {
 
 /** extension: operational notices such as the "Cloud Unreachable" fallback. */
 export interface NoticeEventData {
-  kind: 'cloud_unreachable' | 'budget_exhausted' | 'info'
+  kind: 'cloud_unreachable' | 'budget_exhausted' | 'knowledge_gap' | 'info'
   message: string
 }
 
